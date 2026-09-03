@@ -1,3 +1,4 @@
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -14,7 +15,7 @@ const loginAdmin = async (req, res) => {
     const { email, password } = req.body;
 
     // ----------------------------------------------------------
-    // CHECK FIELDS
+    // Check login fields
     // ----------------------------------------------------------
 
     if (!email || !password) {
@@ -25,13 +26,56 @@ const loginAdmin = async (req, res) => {
     }
 
     // ----------------------------------------------------------
-    // CHECK ADMIN EMAIL
+    // Get admin configuration from environment variables
     // ----------------------------------------------------------
 
-    if (
-      email.toLowerCase().trim() !==
-      process.env.ADMIN_EMAIL.toLowerCase().trim()
-    ) {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+    const jwtSecret = process.env.JWT_SECRET;
+
+    // ----------------------------------------------------------
+    // Check environment variables
+    // ----------------------------------------------------------
+
+    if (!adminEmail) {
+      console.error('ADMIN_EMAIL is missing from server environment variables');
+
+      return res.status(500).json({
+        success: false,
+        message: 'Admin email is not configured on the server'
+      });
+    }
+
+    if (!adminPasswordHash) {
+      console.error(
+        'ADMIN_PASSWORD_HASH is missing from server environment variables'
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'Admin password is not configured on the server'
+      });
+    }
+
+    if (!jwtSecret) {
+      console.error(
+        'JWT_SECRET is missing from server environment variables'
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'JWT secret is not configured on the server'
+      });
+    }
+
+    // ----------------------------------------------------------
+    // Check admin email
+    // ----------------------------------------------------------
+
+    const enteredEmail = String(email).trim().toLowerCase();
+    const savedAdminEmail = String(adminEmail).trim().toLowerCase();
+
+    if (enteredEmail !== savedAdminEmail) {
       return res.status(401).json({
         success: false,
         message: 'Invalid admin email or password'
@@ -39,12 +83,12 @@ const loginAdmin = async (req, res) => {
     }
 
     // ----------------------------------------------------------
-    // CHECK ADMIN PASSWORD
+    // Check admin password
     // ----------------------------------------------------------
 
     const passwordMatch = await bcrypt.compare(
       password,
-      process.env.ADMIN_PASSWORD_HASH
+      adminPasswordHash
     );
 
     if (!passwordMatch) {
@@ -55,37 +99,40 @@ const loginAdmin = async (req, res) => {
     }
 
     // ----------------------------------------------------------
-    // CREATE ADMIN JWT
+    // Create admin JWT token
     // ----------------------------------------------------------
 
     const token = jwt.sign(
       {
         role: 'admin',
-        email: process.env.ADMIN_EMAIL
+        email: adminEmail
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       {
         expiresIn: '7d'
       }
     );
 
     // ----------------------------------------------------------
-    // RESPONSE
+    // Successful login
     // ----------------------------------------------------------
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Admin login successful',
       token,
       admin: {
-        email: process.env.ADMIN_EMAIL
+        email: adminEmail
       }
     });
 
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error(
+      'Admin login error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error during admin login'
     });
@@ -103,15 +150,18 @@ const getStudents = async (req, res) => {
       .select('-password')
       .sort({ createdAt: -1 });
 
-    res.json({
+    return res.json({
       success: true,
       students
     });
 
   } catch (error) {
-    console.error('Get students error:', error);
+    console.error(
+      'Get students error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while getting students'
     });
@@ -135,15 +185,18 @@ const getStudentById = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       student
     });
 
   } catch (error) {
-    console.error('Get student error:', error);
+    console.error(
+      'Get student error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while getting student'
     });
@@ -168,15 +221,18 @@ const deleteStudent = async (req, res) => {
 
     await Student.findByIdAndDelete(req.params.id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Student deleted successfully'
     });
 
   } catch (error) {
-    console.error('Delete student error:', error);
+    console.error(
+      'Delete student error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while deleting student'
     });
@@ -193,15 +249,18 @@ const getAdminCourses = async (req, res) => {
     const courses = await Course.find()
       .sort({ createdAt: -1 });
 
-    res.json({
+    return res.json({
       success: true,
       courses
     });
 
   } catch (error) {
-    console.error('Admin get courses error:', error);
+    console.error(
+      'Admin get courses error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while getting courses'
     });
@@ -229,21 +288,24 @@ const createCourse = async (req, res) => {
     }
 
     const course = await Course.create({
-      name,
-      description,
-      duration
+      name: name.trim(),
+      description: description.trim(),
+      duration: duration.trim()
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'Course created successfully',
       course
     });
 
   } catch (error) {
-    console.error('Create course error:', error);
+    console.error(
+      'Create course error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while creating course'
     });
@@ -273,9 +335,9 @@ const updateCourse = async (req, res) => {
     const course = await Course.findByIdAndUpdate(
       req.params.id,
       {
-        name,
-        description,
-        duration
+        name: name.trim(),
+        description: description.trim(),
+        duration: duration.trim()
       },
       {
         new: true,
@@ -290,16 +352,19 @@ const updateCourse = async (req, res) => {
       });
     }
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Course updated successfully',
       course
     });
 
   } catch (error) {
-    console.error('Update course error:', error);
+    console.error(
+      'Update course error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while updating course'
     });
@@ -324,15 +389,18 @@ const deleteCourse = async (req, res) => {
 
     await Course.findByIdAndDelete(req.params.id);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Course deleted successfully'
     });
 
   } catch (error) {
-    console.error('Delete course error:', error);
+    console.error(
+      'Delete course error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while deleting course'
     });
@@ -349,7 +417,7 @@ const getStatistics = async (req, res) => {
     const totalStudents = await Student.countDocuments();
     const totalCourses = await Course.countDocuments();
 
-    res.json({
+    return res.json({
       success: true,
       statistics: {
         totalStudents,
@@ -358,15 +426,22 @@ const getStatistics = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Statistics error:', error);
+    console.error(
+      'Statistics error:',
+      error.message
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Server error while getting statistics'
     });
   }
 };
 
+
+// ============================================================
+// EXPORT CONTROLLERS
+// ============================================================
 
 module.exports = {
   loginAdmin,
@@ -379,3 +454,4 @@ module.exports = {
   deleteCourse,
   getStatistics
 };
+
