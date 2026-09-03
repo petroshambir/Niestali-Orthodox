@@ -20,7 +20,7 @@ function AdminLogin() {
 
     setError('');
     setLoading(true);
-//
+
     try {
       const response = await fetch(
         // `${API_URL}/api/admin/login`,
@@ -80,7 +80,7 @@ function AdminLogin() {
           </h1>
 
           <p className="text-slate-600 mt-2">
-            Login to your administrator account...
+            Login to your administrator account.
           </p>
 
         </div>
