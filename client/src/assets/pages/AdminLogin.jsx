@@ -166,7 +166,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 // import API_URL from "../components/api";
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://niestali-orthodox.onrender.com';
 
 function AdminLogin() {
   const navigate = useNavigate();

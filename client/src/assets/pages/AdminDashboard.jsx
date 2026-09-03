@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://niestali-orthodox.onrender.com';
 
 function AdminDashboard() {
   const navigate = useNavigate();
