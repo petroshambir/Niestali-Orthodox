@@ -86,10 +86,32 @@ const loginAdmin = async (req, res) => {
     // Check admin password
     // ----------------------------------------------------------
 
-    const passwordMatch = await bcrypt.compare(
-      password,
-      adminPasswordHash
-    );
+    // const passwordMatch = await bcrypt.compare(
+    //   password,
+    //   adminPasswordHash
+    // );
+
+    // if (!passwordMatch) {
+    //   return res.status(401).json({
+    //     success: false,
+    //     message: 'Invalid admin email or password'
+    //   });
+    // }
+// ----------------------------------------------------------
+    // Check admin password (supports both plain text and bcrypt hash)
+    // ----------------------------------------------------------
+
+    let passwordMatch = false;
+
+    if (
+      adminPasswordHash.startsWith('$2b$') ||
+      adminPasswordHash.startsWith('$2a$') ||
+      adminPasswordHash.startsWith('$2y$')
+    ) {
+      passwordMatch = await bcrypt.compare(password, adminPasswordHash);
+    } else {
+      passwordMatch = (password === adminPasswordHash);
+    }
 
     if (!passwordMatch) {
       return res.status(401).json({
@@ -97,7 +119,6 @@ const loginAdmin = async (req, res) => {
         message: 'Invalid admin email or password'
       });
     }
-
     // ----------------------------------------------------------
     // Create admin JWT token
     // ----------------------------------------------------------
